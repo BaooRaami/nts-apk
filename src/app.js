@@ -1,7 +1,11 @@
 window.onerror = function(msg, src, line) {
-  document.body.innerHTML = '<div style="background:red;color:white;padding:20px;font-size:16px;position:fixed;top:0;left:0;right:0;z-index:9999">' + msg + '<br>' + src + ':' + line + '</div>';
+  dbg('ERROR: ' + msg + ' @ ' + src + ':' + line);
 };
-const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+window.dbg = function(msg) {
+  const el = document.getElementById('debug-log');
+  if (el) el.textContent += msg + '\n';
+};
+dbg('JS started');const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
 // ===== Date Helper =====
 function todayISO() {
@@ -30,8 +34,8 @@ async function shareText(text) {
 }
 
 // ===== Vue App =====
-createApp({
-  setup() {
+dbg('Vue createApp starting');
+createApp({  setup() {
     // -- State --
     const page = ref('dashboard');
     const tests = ref([]);
@@ -114,7 +118,8 @@ createApp({
       } catch (e) {
         console.error('loadTests failed:', e);
       }
-      document.dispatchEvent(new Event('vue-app-ready'));
+      dbg('dispatching vue-app-ready');
+      document.dispatchEvent(new Event('vue-app-ready'));    
     });    
     
     // -- Sheet Actions --
