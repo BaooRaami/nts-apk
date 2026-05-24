@@ -1,3 +1,6 @@
+window.onerror = function(msg, src, line) {
+  document.body.innerHTML = '<div style="background:red;color:white;padding:20px;font-size:16px;position:fixed;top:0;left:0;right:0;z-index:9999">' + msg + '<br>' + src + ':' + line + '</div>';
+};
 const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
 // ===== Date Helper =====

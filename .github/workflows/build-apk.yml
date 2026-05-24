@@ -26,6 +26,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up icon source
+        run: |
+          mkdir -p assets
+          cp src/app-icon.png assets/icon.png
+
       - name: Generate Android icon
         run: npx capacitor-assets generate --android
         continue-on-error: true
