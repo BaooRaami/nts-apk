@@ -1,1 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NTS - Test Conducting App</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="libs/vue.global.prod.js"></script>
+</head>
+<body>
+  <div id="app-loader">
+    <div class="app-spinner"></div>
+  </div>
+  <div id="app">    
+    <!-- Dashboard Page -->
+    <div v-if="page === 'dashboard'" class="page dashboard-page">
+      <header class="app-header">
+        <h1>NTS Dashboard</h1>
+        <p class="subtitle">Test Conducting System</p>
+      </header>
 
+      <main class="dashboard-main">
+        <div v-if="tests.length === 0" class="empty-state">
+          <div class="empty-icon" v-html="icons.test"></div>
+          <h3>No Tests Yet</h3>
+          <p>Create your first test using the button below</p>
+        </div>
+
+        <div v-else class="test-list">
+          <div
+            v-for="test in tests"
+            :key="test.id"
+            class="test-card"
+            @click="openTest(test)"
+          >
+            <div class="test-card-icon" v-html="icons.test"></div>
+            <div class="test-card-info">
+              <h3 class="test-name">{{ test.name }}</h3>
+              <p class="test-date">
+                <span v-html="icons.calendar"></span>
+                {{ formatDate(test.date) }}
+              </p>
+            </div>
+            <div
+              class="card-action"
+              @click.stop="openEditSheet(test)"
+            >
+              <span v-html="icons.editPen"></span>
+              <span class="card-action-label">Edit</span>
+            </div>
+          </div>
+        </div>
+        <button class="fab" v-if="activeTab === 'rooms'" @click="openRoomSheet" v-html="icons.plus"></button>
+        <button class="fab fab-filter" v-if="activeTab === 'attendance' && rooms.length > 0" :class="{ active: attendanceFilter !== 'all' }" @click="openFilterSheet" v-html="icons.filter"></button>
+      </main>
+
+      <button class="fab" @click="openCreateSheet" v-html="icons.plus"></button>
+
+      <nav class="bottom-nav">
+        <button class="nav-item active" @click="page = 'dashboard'">
+          <span class="nav-icon" v-html="icons.manage"></span>
+          <span class="nav-label">Manage</span>
+        </button>
+        <button class="nav-item" @click="page = 'news'">
+          <span class="nav-icon" v-html="icons.news"></span>
+          <span class="nav-label">News</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- News Page -->
+    <div v-if="page === 'news'" class="page news-page">
+      <header class="app-header">
+        <h1>News</h1>
+        <p class="subtitle">Latest updates</p>
+      </header>
+      <main class="test-main">
+        <div class="placeholder-content">
+          <div class="placeholder-icon" v-html="icons.news"></div>
+          <h3>Coming Soon</h3>
+          <p>News section is under development</p>
+        </div>
+      </main>
+      <nav class="bottom-nav">
+        <button class="nav-item" @click="page = 'dashboard'">
+          <span class="nav-icon" v-html="icons.manage"></span>
+          <span class="nav-label">Manage</span>
+        </button>
+        <button class="nav-item active" @click="page = 'news'">
+          <span class="nav-icon" v-html="icons.news"></span>
+          <span class="nav-label">News</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Test Page -->
+    <div v-if="page === 'test' && activeTest" class="page test-page">
+      <header class="test-header">
+        <button class="icon-btn back-btn" @click="goBack" v-html="icons.back"></button>
+        <div class="test-header-info">
+          <h2>{{ activeTest.name }}</h2>
+          <p>{{ formatDate(activeTest.date) }}</p>
+        </div>
+        <div class="spacer"></div>
+      </header>
+      <main class="test-main">
+        <!-- Home Dashboard -->
+        <div v-if="activeTab === 'home'" class="home-dashboard">
+          <div v-if="rooms.length === 0" class="empty-state">
+            <div class="empty-icon" v-html="icons.home"></div>
+            <h3>No Rooms Yet</h3>
+            <p>Add rooms to see the dashboard</p>
+          </div>
+
+          <div v-else class="dashboard-cards fab-spaced">
+            <!-- Marked Rooms -->
+            <div v-if="markedStats.total > 0" class="dash-card marked-card">
+              <div class="dash-card-header">
+                <div class="dash-card-icon" v-html="icons.attendance"></div>
+                <span class="dash-card-title">Marked Rooms ({{ markedRoomCount }})</span>
+                <button class="dash-card-share icon-btn" @click.stop="shareMarkedCard" v-html="icons.share"></button>
+              </div>
+              <div class="dash-stats-row">
+                <div class="dash-stat">
+                  <span class="dash-stat-value dash-present">{{ markedStats.present }}</span>
+                  <span class="dash-stat-label">Present</span>
+                </div>
+                <div class="dash-stat-sep"></div>
+                <div class="dash-stat">
+                  <span class="dash-stat-value dash-absent">{{ markedStats.absent }}</span>
+                  <span class="dash-stat-label">Absent</span>
+                </div>
+                <div class="dash-stat-sep"></div>
+                <div class="dash-stat">
+                  <span class="dash-stat-value">{{ markedStats.total }}</span>
+                  <span class="dash-stat-label">Total</span>
+                </div>
+              </div>
+              <div class="dash-bar-wrap">
+                <div class="dash-bar-track">
+                  <div class="dash-bar-seg dash-bar-present" :style="{ width: markedBarPresent + '%' }"></div>
+                  <div class="dash-bar-seg dash-bar-absent" :style="{ width: markedBarAbsent + '%' }"></div>
+                </div>
+                <div class="dash-bar-labels">
+                  <span>{{ markedBarPresent }}% present</span>
+                  <span>{{ markedBarAbsent }}% absent</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- All Rooms -->
+            <div class="dash-card all-card">
+              <div class="dash-card-header">
+                <div class="dash-card-icon" v-html="icons.rooms"></div>
+                <span class="dash-card-title">All Rooms ({{ rooms.length }})</span>
+                <button class="dash-card-share icon-btn" @click.stop="shareAllCard" v-html="icons.share"></button>
+              </div>
+              <div class="dash-stats-row">
+                <div class="dash-stat">
+                  <span class="dash-stat-value dash-present">{{ allStats.present }}</span>
+                  <span class="dash-stat-label">Present</span>
+                </div>
+                <div class="dash-stat-sep"></div>
+                <div class="dash-stat">
+                  <span class="dash-stat-value dash-absent">{{ allStats.absent }}</span>
+                  <span class="dash-stat-label">Absent</span>
+                </div>
+                <div class="dash-stat-sep"></div>
+                <div class="dash-stat">
+                  <span class="dash-stat-value">{{ allStats.total }}</span>
+                  <span class="dash-stat-label">Total</span>
+                </div>
+              </div>
+              <div class="dash-bar-wrap">
+                <div class="dash-bar-track">
+                  <div class="dash-bar-seg dash-bar-present" :style="{ width: allBarPresent + '%' }"></div>
+                  <div class="dash-bar-seg dash-bar-absent" :style="{ width: allBarAbsent + '%' }"></div>
+                </div>
+                <div class="dash-bar-labels">
+                  <span>{{ allBarPresent }}% present</span>
+                  <span>{{ allBarAbsent }}% absent</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div v-if="activeTab === 'attendance'" class="attendance-content">
+          <div v-if="rooms.length === 0" class="empty-state">
+            <div class="empty-icon" v-html="icons.attendance"></div>
+            <h3>No Rooms Yet</h3>
+            <p>Add rooms first to take attendance</p>
+          </div>
+
+          <div v-else-if="filteredRooms.length === 0" class="empty-state">
+            <div class="empty-icon" v-html="icons.attendance"></div>
+            <h3>No Rooms</h3>
+            <p>{{ attendanceFilter === 'marked' ? 'No marked rooms yet' : 'All rooms are marked' }}</p>
+          </div>
+
+          <div v-else class="attendance-list">
+            <div
+              v-for="room in filteredRooms"
+              :key="room.id"
+              class="attendance-card"
+            >
+              <div class="attendance-room-info">
+                <h3 class="attendance-room-name">{{ room.name }}</h3>
+                <p class="attendance-room-capacity">Total: {{ getTotal(room) }}</p>
+              </div>
+              <div class="attendance-inputs">
+                <div class="attendance-field">
+                  <label>Present</label>
+                  <input
+                    type="number"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    :max="getTotal(room)"
+                    :value="attendanceInput[room.id] !== undefined ? attendanceInput[room.id] : getPresent(room.id)"
+                    @input="onPresentInput(room, $event)"
+                    @blur="onPresentBlur(room)"
+                    @keyup.enter="focusNextRoom(room)"
+                    :ref="el => { if (el) attendanceInputRefs[room.id] = el }"
+                    placeholder="0"
+                  >                
+                  </div>
+                <div class="attendance-field">
+                  <label>Absent</label>
+                  <span class="attendance-absent">{{ getAbsent(room.id) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Tab -->
+        <div v-if="activeTab === 'search'" class="search-content">
+          <div class="search-bar-wrap">
+            <span class="search-bar-icon" v-html="icons.search"></span>
+            <input
+              ref="searchInput"
+              class="search-bar-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter roll number..."
+              v-model="searchQuery"
+            >
+            <button class="search-clear-btn" v-if="searchQuery" @click="clearSearch(); $nextTick(() => $refs.searchInput.focus())">×</button>
+          </div>
+
+          <div v-if="!searchQuery" class="search-hint">
+            <p>Type a roll number to find the room</p>
+          </div>
+
+          <div v-else-if="searchResults.length === 0" class="search-hint">
+            <p>No room found for <strong>{{ searchQuery }}</strong></p>
+          </div>
+
+          <div v-else class="search-results">
+            <div
+              v-for="result in searchResults"
+              :key="result.room.id"
+              class="search-result-card"
+              :class="{ 'exact': result.exactMatch, 'partial': !result.exactMatch }"
+            >
+              <div class="search-result-badge" :class="{ 'badge-exact': result.exactMatch, 'badge-partial': !result.exactMatch }">
+                {{ result.exactMatch ? 'Found' : 'Partial' }}
+              </div>
+              <div class="search-result-room" v-html="icons.rooms"></div>
+              <div class="search-result-info">
+                <span class="search-result-name">{{ result.room.name }}</span>
+                <span class="search-result-range">
+                  <span v-for="(range, i) in result.room.rollRanges" :key="i">
+                    <span v-if="range.startRoll !== null && range.endRoll !== null">
+                      {{ i > 0 ? ' · ' : '' }}{{ range.startRoll }}–{{ range.endRoll }}
+                    </span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rooms Tab -->
+        <div v-if="activeTab === 'rooms'" class="rooms-content fab-spaced">
+          <div v-if="rooms.length === 0" class="empty-state">
+            <div class="empty-icon" v-html="icons.rooms"></div>
+            <h3>No Rooms Yet</h3>
+            <p>Add rooms using the + button below</p>
+          </div>
+
+          <div v-else class="room-list">
+            <div
+              v-for="room in rooms"
+              :key="room.id"
+              class="room-card-wrapper"
+              :class="{ expanded: expandedRoomId === room.id }"
+            >
+              <div class="room-card" :class="{ expanded: expandedRoomId === room.id }" @click="toggleRoomDetail(room.id)">
+                <div class="room-card-icon" v-html="icons.rooms"></div>
+                <div class="room-card-info">
+                  <h3 v-if="expandedRoomId !== room.id" class="room-name">{{ room.name }}</h3>
+                  <div v-else class="input-with-clear room-name-input-wrap">
+                    <input type="text" class="room-name-input" v-model="room.name" @blur="saveRoom(room)" placeholder="Room name" @click.stop>
+                    <button class="input-clear-btn" @click.stop="room.name = ''; saveRoom(room)" v-if="room.name">×</button>
+                  </div>
+                  <p v-if="expandedRoomId !== room.id" class="room-capacity">Capacity: {{ room.capacity || 'Not set' }}</p>
+                </div>                
+                <button
+                  class="room-delete-btn"
+                  @click.stop="deleteRoom(room)"
+                  v-html="icons.trash"
+                ></button>
+              </div>
+
+              <!-- Room Detail View -->
+              <template v-if="expandedRoomId === room.id">
+                <div
+                  v-for="(range, rangeIndex) in room.rollRanges"
+                  :key="rangeIndex"
+                  class="room-detail"
+                  :class="{ 'room-detail-first': rangeIndex === 0 }"
+                >
+                  <div class="room-detail-content">
+                    <div class="detail-form-row">
+                      <div class="detail-form-group">
+                        <label>Start Roll</label>
+                        <div class="input-with-clear">
+                          <input type="number" v-model.number="range.startRoll" @input="saveRoom(room)" inputmode="numeric" pattern="[0-9]*" placeholder="1" min="0">
+                          <button class="input-clear-btn" @click="range.startRoll = null; saveRoom(room)" v-if="range.startRoll !== null && range.startRoll !== undefined && range.startRoll !== ''">×</button>
+                        </div>
+                      </div>
+                      <div class="detail-form-group">
+                        <label>End Roll</label>
+                        <div class="input-with-clear">
+                          <input type="number" v-model.number="range.endRoll" @input="saveRoom(room)" inputmode="numeric" pattern="[0-9]*" placeholder="30" min="0">
+                          <button class="input-clear-btn" @click="range.endRoll = null; saveRoom(room)" v-if="range.endRoll !== null && range.endRoll !== undefined && range.endRoll !== ''">×</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="room-detail room-detail-add-series" v-if="expandedRoomId === room.id">
+                  <button class="btn btn-secondary" @click.stop="addRangeSeries(room)">+ Add Series</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+        <button class="fab" v-if="activeTab === 'rooms'" @click="openRoomSheet" v-html="icons.plus"></button>
+        <button class="fab fab-filter" v-if="activeTab === 'attendance' && rooms.length > 0" :class="{ active: attendanceFilter !== 'all' }" @click="openFilterSheet" v-html="icons.filter"></button>
+      </main>
+
+      <nav class="bottom-nav">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="nav-item"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <span class="nav-icon" v-html="tab.icon"></span>
+          <span class="nav-label">{{ tab.label }}</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Sheet: Create / Edit Test -->
+    <div v-if="showSheet" class="sheet-overlay" @click="closeSheet">
+      <div class="bottom-sheet" @click.stop>
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">{{ sheetMode === 'create' ? 'Create New Test' : 'Edit Test' }}</h2>
+
+        <div class="form-group">
+          <label for="testName">Test Name</label>
+          <input
+            id="testName"
+            v-model="sheetName"
+            type="text"
+            placeholder="e.g. Mathematics Mid-Term"
+            @keyup.enter="saveSheet"
+          >
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="testPsid">PSID</label>
+            <input id="testPsid" v-model="sheetPsid" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 123456">
+          </div>
+          <div class="form-group">
+            <label for="testDate">Date</label>
+            <input id="testDate" v-model="sheetDate" type="date">
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button
+            v-if="sheetMode === 'edit'"
+            class="btn btn-danger btn-small"
+            @click="deleteTest"
+          >Delete</button>
+          <button
+            class="btn btn-primary btn-large"
+            @click="saveSheet"
+            :disabled="!sheetName.trim()"
+          >{{ sheetMode === 'create' ? 'Create Test' : 'Update' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file input for camera + gallery -->
+    <input
+      ref="scanInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      style="display: none"
+      @change="onScanFileSelected"
+    >
+    <input
+      ref="pickInput"
+      type="file"
+      accept="image/*"
+      style="display: none"
+      @change="onScanFileSelected"
+    >
+
+    <!-- Image Preview Overlay -->
+    <div v-if="scanPreviewUrl" class="sheet-overlay" @click="closeScanPreview">
+      <div class="scan-preview" @click.stop>
+        <div class="scan-preview-header">
+          <h3>Scanned Image</h3>
+          <button class="icon-btn" @click="closeScanPreview" v-html="icons.closeX"></button>
+        </div>
+        <img :src="scanPreviewUrl" alt="Scanned image">
+        <div class="scan-preview-actions">
+          <template v-if="!scanProcessing">
+            <button class="btn btn-secondary" @click="closeScanPreview">Cancel</button>
+            <button class="btn btn-primary" @click="processScannedImage">Process</button>
+          </template>
+          <div v-else class="scan-spinner-row">
+            <div class="scan-spinner"></div>
+            <span>Processing...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Room Actions -->
+    <div v-if="showRoomSheet" class="sheet-overlay" @click="closeRoomSheet">
+      <div class="bottom-sheet room-sheet" @click.stop>
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">Add Rooms</h2>
+        <div class="room-options">
+          <button class="room-option room-option-full" @click="onAddManually">
+            <span class="room-option-icon" v-html="icons.editPen"></span>
+            <span class="room-option-text">Add Manually</span>
+          </button>
+          <p class="room-option-label">AI Processing</p>
+          <div class="room-option-row">
+            <button class="room-option" @click="onScanImage">
+              <span class="room-option-icon" v-html="icons.scan"></span>
+              <span class="room-option-text">Scan Image</span>
+            </button>
+            <button class="room-option" @click="onPickImage">
+              <span class="room-option-icon" v-html="icons.pickImage"></span>
+              <span class="room-option-text">Pick Image</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Add Room Manually -->
+    <div v-if="showManualSheet" class="sheet-overlay" @click="closeManualSheet">
+      <div class="bottom-sheet manual-sheet" @click.stop>
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">How many rooms to Add?</h2>
+
+        <div class="form-group">
+          <input
+            id="roomNumber"
+            v-model="manualRoomNumber"
+            type="number"
+            min="1"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="e.g. 5"
+            @keyup.enter="saveManualRoom"
+          >
+        </div>
+
+        <div class="sheet-actions">
+          <button
+            class="btn btn-primary btn-large"
+            @click="saveManualRoom"
+            :disabled="!manualRoomNumber"
+          >Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Attendance Filter -->
+    <div v-if="showFilterSheet" class="sheet-overlay" @click="closeFilterSheet">
+      <div class="bottom-sheet room-sheet" @click.stop>
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">Filter Rooms</h2>
+        <div class="room-options">
+          <button class="room-option room-option-full" :class="{ active: attendanceFilter === 'all' }" @click="setFilter('all')">
+            <span class="room-option-icon" v-html="icons.rooms"></span>
+            <span class="room-option-text">Show All Rooms</span>
+            <span v-if="attendanceFilter === 'all'" class="filter-check" v-html="icons.check"></span>
+          </button>
+          <button class="room-option room-option-full" :class="{ active: attendanceFilter === 'marked' }" @click="setFilter('marked')">
+            <span class="room-option-icon" v-html="icons.attendance"></span>
+            <span class="room-option-text">Show Marked Only</span>
+            <span v-if="attendanceFilter === 'marked'" class="filter-check" v-html="icons.check"></span>
+          </button>
+          <button class="room-option room-option-full" :class="{ active: attendanceFilter === 'unmarked' }" @click="setFilter('unmarked')">
+            <span class="room-option-icon" v-html="icons.empty"></span>
+            <span class="room-option-text">Show Unmarked Only</span>
+            <span v-if="attendanceFilter === 'unmarked'" class="filter-check" v-html="icons.check"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('vue-app-ready', function() {
+      document.getElementById('app-loader').style.display = 'none';
+      document.getElementById('app').style.display = '';
+    });
+  </script>
+</body>
+</html>
