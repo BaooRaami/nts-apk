@@ -1,1 +1,8 @@
-
+{
+  "appId": "com.baooraami.nts.app",
+  "appName": "NTS",
+  "webDir": "src",
+  "plugins": {
+    "Share": {}
+  }
+}
