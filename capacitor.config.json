@@ -1,6 +1,6 @@
 {
   "appId": "com.baooraami.nts.app",
-  "appName": "NTS",
+  "appName": "NTS Admin",
   "webDir": "src",
   "plugins": {
     "Share": {}
