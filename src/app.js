@@ -1,11 +1,4 @@
-window.onerror = function(msg, src, line) {
-  dbg('ERROR: ' + msg + ' @ ' + src + ':' + line);
-};
-window.dbg = function(msg) {
-  const el = document.getElementById('debug-log');
-  if (el) el.textContent += msg + '\n';
-};
-dbg('JS started');const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
 // ===== Date Helper =====
 function todayISO() {
@@ -34,8 +27,8 @@ async function shareText(text) {
 }
 
 // ===== Vue App =====
-dbg('Vue createApp starting');
-createApp({  setup() {
+createApp({
+  setup() {
     // -- State --
     const page = ref('dashboard');
     const tests = ref([]);
@@ -112,16 +105,10 @@ createApp({  setup() {
       attendanceMap.value = map;
     }
 
-    onMounted(async () => {
-      try {
-        await loadTests();
-      } catch (e) {
-        console.error('loadTests failed:', e);
-      }
-      dbg('dispatching vue-app-ready');
-      document.dispatchEvent(new Event('vue-app-ready'));    
-    });    
-    
+    onMounted(() => {
+      loadTests();
+    });
+
     // -- Sheet Actions --
     function openCreateSheet() {
       sheetMode.value = 'create';

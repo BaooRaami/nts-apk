@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>NTS - Test Conducting App</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="app-icon.png">
   <script src="libs/vue.global.prod.js"></script>
+<base target="_blank">
 </head>
 <body>
-  <div id="app-loader">
-    <div class="app-spinner"></div>
-    <div id="debug-log" style="position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:12px;padding:8px;z-index:9999;max-height:40vh;overflow-y:auto;font-family:monospace;white-space:pre-wrap;"></div>
-  </div>
-  <div id="app">    
+  <div id="app">
     <!-- Dashboard Page -->
     <div v-if="page === 'dashboard'" class="page dashboard-page">
       <header class="app-header">
@@ -531,12 +527,6 @@
     </div>
   </div>
 
-  <script>
-    document.addEventListener('vue-app-ready', function() {
-      document.getElementById('app-loader').style.display = 'none';
-      document.getElementById('app').style.display = '';
-    });
-  </script>
   <script src="icons.js"></script>
   <script src="db.js"></script>
   <script src="app.js"></script>
