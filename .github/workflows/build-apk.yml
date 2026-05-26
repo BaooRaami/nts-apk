@@ -26,6 +26,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync web files
+        run: npx cap sync android
+
       - name: Set up icon source
         run: |
           mkdir -p assets
@@ -33,13 +39,6 @@ jobs:
 
       - name: Generate Android icon
         run: npx capacitor-assets generate --android
-        continue-on-error: true
-
-      - name: Add Android platform
-        run: npx cap add android
-
-      - name: Sync web files
-        run: npx cap sync android
 
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
