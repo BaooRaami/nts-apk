@@ -75,6 +75,8 @@ createApp({
     function closeFilterSheet() { showFilterSheet.value = false; }
     function setFilter(filter) { attendanceFilter.value = filter; closeFilterSheet(); }
 
+    watch(activeTab, () => { attendanceFilter.value = 'all'; searchQuery.value = ''; });
+
     watch(manualRoomNumber, (val) => {
       const num = parseInt(val, 10);
       if (!isNaN(num) && num < 1) manualRoomNumber.value = '1';
@@ -121,8 +123,12 @@ onMounted(() => {
           if (showFilterSheet.value)  { closeFilterSheet(); return; }
           if (scanPreviewUrl.value)   { closeScanPreview(); return; }
 
-          // Priority 2: go back from test page to dashboard
-          if (page.value === 'test') { goBack(); return; }
+          // Priority 2: go back from test page
+          if (page.value === 'test') {
+            if (activeTab.value !== 'home') { activeTab.value = 'home'; return; }
+            goBack();
+            return;
+          }
 
           // Priority 3: on dashboard — double-press to exit
           if (backPressedOnce) {
@@ -417,6 +423,8 @@ onMounted(() => {
     async function openTest(test) {
       activeTest.value = test;
       activeTab.value = 'home';
+      attendanceFilter.value = 'all';
+      searchQuery.value = '';
       page.value = 'test';
       await loadRooms();
     }
