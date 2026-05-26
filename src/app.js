@@ -46,6 +46,7 @@ createApp({
     const scanPreviewUrl = ref(null);
     const scanFile = ref(null);
     const scanProcessing = ref(false);
+    const showExitToast = ref(false);
 
     // -- Rooms State --
     const rooms = ref([]);
@@ -105,8 +106,37 @@ createApp({
       attendanceMap.value = map;
     }
 
-    onMounted(() => {
+onMounted(() => {
       loadTests();
+
+      // -- Hardware / swipe back button --
+      let backPressedOnce = false;
+
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        window.Capacitor.Plugins.App.addListener('backButton', () => {
+          // Priority 1: close any open sheet or overlay
+          if (showSheet.value)        { closeSheet();       return; }
+          if (showRoomSheet.value)    { closeRoomSheet();   return; }
+          if (showManualSheet.value)  { closeManualSheet(); return; }
+          if (showFilterSheet.value)  { closeFilterSheet(); return; }
+          if (scanPreviewUrl.value)   { closeScanPreview(); return; }
+
+          // Priority 2: go back from test page to dashboard
+          if (page.value === 'test') { goBack(); return; }
+
+          // Priority 3: on dashboard — double-press to exit
+          if (backPressedOnce) {
+            window.Capacitor.Plugins.App.exitApp();
+            return;
+          }
+          backPressedOnce = true;
+          showExitToast.value = true;
+          setTimeout(() => {
+            backPressedOnce = false;
+            showExitToast.value = false;
+          }, 2000);
+        });
+      }
     });
 
     // -- Sheet Actions --
@@ -648,6 +678,7 @@ createApp({
       openFilterSheet, closeFilterSheet, setFilter,
       attendanceInputRefs, focusNextRoom,
       shareMarkedCard, shareAllCard,
+      showExitToast,
     };
   }
 }).mount('#app');
